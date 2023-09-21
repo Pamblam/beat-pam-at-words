@@ -1,6 +1,11 @@
 
 let dict = [];
 
+export async function isWordValid(word){
+	if (!dict.length) dict = await fetch("./data/wordlist.json").then(r => r.json());
+	return dict.includes(word.trim().toLowerCase());
+}
+
 export async function WordFinder(word, segment) {
 	if (!dict.length) dict = await fetch("./data/wordlist.json").then(r => r.json());
 	let my_letters = word.toLowerCase().split('');

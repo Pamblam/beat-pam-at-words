@@ -1,5 +1,5 @@
 import {Cell} from './Cell.module.js';
-import {WordFinder} from './WordFinder.module.js';
+import {WordFinder, isWordValid} from './WordFinder.module.js';
 import {Turn} from './Turn.module.js';
 
 export class Board{
@@ -18,8 +18,9 @@ export class Board{
 		});
 	}
 
-	addTurn(turn){
-		if(!this.validateAndScoreTurn(turn)) throw new Error("Invalid turn.");
+	async addTurn(turn){
+		let valid = await this.validateAndScoreTurn(turn);
+		if(!valid) throw new Error("Invalid turn.");
 		let curr_x = turn.cell_x, curr_y = turn.row_y;
 		let letters = turn.getLetters();
 		for(let i=0; i<letters.length; i++){
@@ -137,7 +138,7 @@ export class Board{
 			let words = await WordFinder(letters, segment);
 			for(let w=0; w<words.length; w++){
 				let turn = new Turn(x, y, vertical, words[w]);
-				let is_valid = this.validateAndScoreTurn(turn);
+				let is_valid = await this.validateAndScoreTurn(turn);
 				if(is_valid && (!best_play || turn.score > best_play.score)){
 					best_play = turn;
 				}
@@ -167,11 +168,13 @@ export class Board{
 			for(let x=board_size-word.length; x--;){
 				for(let y=board_size; y--;){
 					let h = new Turn(x, y, false, word);
-					if(this.validateAndScoreTurn(h) && (!best_play || h.score > best_play.score)){
+					let is_valid = await this.validateAndScoreTurn(h);
+					if(is_valid && (!best_play || h.score > best_play.score)){
 						best_play = h;
 					}
 					let v = new Turn(x, y, true, word);
-					if(this.validateAndScoreTurn(v) && (!best_play || v.score > best_play.score)){
+					is_valid = await this.validateAndScoreTurn(v);
+					if(is_valid && (!best_play || v.score > best_play.score)){
 						best_play = v;
 					}
 				}
@@ -195,7 +198,7 @@ export class Board{
 		return {score, word_multiplier};
 	}
 
-	validateAndScoreTurn(turn){
+	async validateAndScoreTurn(turn){
 		let score = 0;
 		let word_multiplier = 1;
 		let touches_word = false;
@@ -211,9 +214,13 @@ export class Board{
 			if(cell.letter){
 				touches_word = true;
 				if(cell.letter !== play_letter) return false;
-			}else if(cell.score_modifier === "CC"){
-				touches_word = true;
-			}
+			}else{
+				if(cell.score_modifier === "CC"){
+					touches_word = true;
+				}
+				let adjacent_word = this.getConsecutiveLettersAt(curr_x, curr_y, play_letter, !turn.is_vertical);
+				if(adjacent_word.length > 1 && !(await isWordValid(adjacent_word))) return false;
+			} 
 
 			let s = this.getLetterScore(play_letter, curr_x, curr_y);
 			score += s.score;
@@ -227,13 +234,29 @@ export class Board{
 			
 		}
 
+		if(!touches_word) return false;
+
+
 		turn.score = score * word_multiplier;
-		return touches_word;
+		return true;
 	}
 
-	print(){
-		
-
+	getConsecutiveLettersAt(x, y, potential_letter, is_vertical){
+		let letters = [potential_letter];
+		let curr_x = x, curr_y = y;
+		while(true){
+			if(is_vertical) curr_y--; else curr_x--;
+			if(!this.board[curr_y] || !this.board[curr_y][curr_x] || !this.board[curr_y][curr_x].letter) break;
+			letters.unshift(this.board[curr_y][curr_x].letter);
+		}
+		curr_x = x, curr_y = y;
+		while(true){
+			if(is_vertical) curr_y++; else curr_x++;
+			if(!this.board[curr_y] || !this.board[curr_y][curr_x] || !this.board[curr_y][curr_x].letter) break;
+			letters.push(this.board[curr_y][curr_x].letter);
+		}
+		return letters.join('');
 	}
+
 }
 

@@ -15,9 +15,8 @@
 		<p>I made this so I beat Pam at Words with Friends. It's easier to write a bot than to learn new words.</p>
 		<div class="alert alert-info"><b>Usage:</b><ol><li>Add the letters you have available.</li><li>Each time Pam makes a move, add the word, the row and column at which it stars, and it's direction, and update the board. Do the same whenever you make a move, so the board below reflects the game board.</li><li>When it is your turn, use the button to find the best possible move given your current letters and the letters on the board. After you make your move, dont forget to update your letters.</li></ol></div>
 		<div class="alert alert-warning"><b>Warnings:</b><ol>
-			<li>Does not yest account for parallel words. For that reason, it might be useful to show top 10 best matches until this can be fixed.</li>
 			<li>The web interface blocks UI rendering during "Find best move" operation. Calculation should be moved to a worker thread. Or else just implement a commend-line version.</li>
-			<li>Needs further testing.</li>
+			<li>Cannot currently handle blank tiles.</li>
 		</ol></div>
 		<div class="form-group">
 			<label for="letters">My Letters:</label>

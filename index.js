@@ -16,14 +16,18 @@ import { WordFinder } from './modules/WordFinder.module.js';
 		my_letters = letters.toUpperCase();
 	};
 
-	const addWordToBoard = (word, col, row, dir) => {
-		board.addTurn(new Turn(col, row, dir === 'V', word));
+	const addWordToBoard = async (word, col, row, dir) => {
+		await board.addTurn(new Turn(col, row, dir === 'V', word));
 		$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
 	};
 
 	const getBestMove = () => {
 		return new Promise(d=>{
-			if (!my_letters.length) return alert("No letters set.");
+			if (!my_letters.length){
+				alert("No letters set.");
+				d();
+				return;
+			} 
 			board.getBestTurn(my_letters).then(turn => {
 				if (turn === false){
 					alert("Can't find a word that fits.");
@@ -47,13 +51,13 @@ import { WordFinder } from './modules/WordFinder.module.js';
 		setLetters(this.value);
 	});
 
-	$("#update_board").on('click', function (e) {
+	$("#update_board").on('click', async function (e) {
 		e.preventDefault();
 		let word = $("#word").val();
 		let col = +$("#col").val();
 		let row = +$("#row").val();
 		let dir = $("#direction").val();
-		addWordToBoard(word, col, row, dir);
+		await addWordToBoard(word, col, row, dir);
 		$("#gamestate").val(PrintBoard(board, true));
 	});
 
@@ -67,7 +71,7 @@ import { WordFinder } from './modules/WordFinder.module.js';
 			if(state && state.length && state[0].length && state[0].length === state.length){
 				for(let y=0; y<state.length; y++){
 					for(let x=0; x<state[y].length; x++){
-						board.board[y][x].letter = state[y][x]!==0 ? state[y][x] : null;
+						board.board[y][x].letter = state[y][x]!==0 ? state[y][x].toLowerCase() : null;
 					}
 				}
 				$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
