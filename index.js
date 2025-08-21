@@ -1,6 +1,7 @@
 
 
 import { Board } from './modules/Board.module.js';
+import { CanvasBoard } from './modules/CanvasBoard.module.js';
 import { PrintBoard } from './modules/PrintBoard.module.js';
 import { Turn } from './modules/Turn.module.js';
 
@@ -120,6 +121,10 @@ import { Turn } from './modules/Turn.module.js';
 	});
 
 	$("#newgame").click(async function(e){
+		let boardLayout = await boardModal();
+		if(!boardLayout) return;
+		console.log(boardLayout);
+		return;
 		e.preventDefault();
 		current_saved_game_index = -1;
 		$("#gametitle").val('');
@@ -197,6 +202,17 @@ import { Turn } from './modules/Turn.module.js';
 		e.preventDefault();
 		copyTextToClipboard(PrintBoard(board, true));
 	});
+
+	function boardModal(){
+		return new Promise(d=>{
+			$("#boardtoolmodal").modal('show');
+			let canvasDiv = document.getElementById('canvasdiv');
+			let board = new CanvasBoard(15, 15, canvasDiv);
+			$("#boardwidth").val(15).off('change').change();
+			$("#boardheight").val(15);
+			
+		});
+	}
 
 	function fallbackCopyTextToClipboard(text) {
 		var textArea = document.createElement("textarea");

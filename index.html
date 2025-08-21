@@ -106,6 +106,41 @@
 		<div id="board"></div>
 
 	</div>
+
+	<div class="modal" tabindex="-1" id="boardtoolmodal">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Board Size</h5>
+					<button type="button" class="close closebtn">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="letters">Width:</label>
+								<input type="number" min='6' max='20' class="form-control" id="boardwidth">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="letters">Height:</label>
+								<input type="number" min='6' max='20' class="form-control" id="boardheight">
+							</div>
+						</div>
+						<div id="canvasdiv"></div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary closebtn">Cancel</button>
+					<button type="button" class="btn btn-primary">Save</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
 		integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
 		crossorigin="anonymous"></script>
