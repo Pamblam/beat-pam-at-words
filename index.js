@@ -3,9 +3,9 @@
 import { Board } from './modules/Board.module.js';
 import { PrintBoard } from './modules/PrintBoard.module.js';
 import { Turn } from './modules/Turn.module.js';
-import { WordFinder } from './modules/WordFinder.module.js';
 
 (async () => {
+
 	let my_letters = '';
 
 	let current_saved_game_index = -1;
@@ -51,20 +51,44 @@ import { WordFinder } from './modules/WordFinder.module.js';
 				alert("No letters set.");
 				d();
 				return;
-			} 
-			board.getBestTurn(my_letters).then(turn => {
-				if (turn === false){
-					alert("Can't find a word that fits.");
-					d();
-				}else{
-					$("#word").val(turn.word.toUpperCase());
-					$("#col").val(turn.cell_x);
-					$("#row").val(turn.row_y);
-					$("#direction").val(turn.is_vertical ? 'V' : 'H');
-					d();
-				}
-				
-			});
+			}
+			
+			if (window.Worker){
+
+				const workerThread = new Worker("worker.js", {type: "module"});
+				workerThread.postMessage({board:JSON.parse(PrintBoard(board, true)), my_letters});
+				workerThread.onmessage = e => {
+					if(e.data.error) alert(e.data.error);
+					if(e.data.turn){
+						$("#word").val(e.data.turn.word.toUpperCase());
+						$("#col").val(e.data.turn.cell_x);
+						$("#row").val(e.data.turn.row_y);
+						$("#direction").val(e.data.turn.is_vertical ? 'V' : 'H');
+						console.log(e.data.turn.word.toUpperCase(),':',e.data.turn.score,'points');
+					}
+					if(e.data.complete){
+						workerThread.terminate();
+						workerThread.onmessage = null; 
+						workerThread.onerror = null;
+						d();
+					}
+				};
+
+			}else{
+				board.getBestTurn(my_letters).then(turn => {
+					if (turn === false){
+						alert("Can't find a word that fits.");
+						d();
+					}else{
+						$("#word").val(turn.word.toUpperCase());
+						$("#col").val(turn.cell_x);
+						$("#row").val(turn.row_y);
+						$("#direction").val(turn.is_vertical ? 'V' : 'H');
+						d();
+					}
+					
+				});
+			}
 		});
 	}
 

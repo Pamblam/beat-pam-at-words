@@ -154,7 +154,7 @@ export class Board{
 		return positions;
 	}
 
-	async getBestTurn(letters){
+	async getBestTurn(letters, callback){
 		letters = letters.trim().toUpperCase();
 		let best_play = false;
 		let playable_segments = this.getPlayableSegments(letters.length);
@@ -169,7 +169,7 @@ export class Board{
 				let is_valid = await this.validateAndScoreTurn(turn, blankPositions);
 				if(is_valid && (!best_play || turn.score > best_play.score)){
 					best_play = turn;
-					console.log(`${words[w]} with ${blankPositions.length} blanks is worth ${turn.score}. [${turn.tiles.join(', ')}]`);
+					if(callback) callback(turn);
 				}
 			}
 		}
