@@ -24,5 +24,6 @@
 	"W": {"count":2, "score":4},
 	"X": {"count":1, "score":8},
 	"Y": {"count":2, "score":3},
-	"Z": {"count":1, "score":10}
+	"Z": {"count":1, "score":10},
+	"_": {"count":2, "score":0}
 }

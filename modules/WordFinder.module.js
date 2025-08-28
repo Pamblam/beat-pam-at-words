@@ -13,15 +13,20 @@ export async function WordFinder(word, segment) {
 	const getWordsContainingLetters = letters => {
 		return dict.filter(word => {
 			let word_letters = word.split('');
+			let blanks = 0;
 			for (let i = letters.length; i--;) {
 				let letter = letters[i];
+				if(letter === '_'){
+					blanks++;
+					continue;
+				}
 				let letter_index = word_letters.indexOf(letter);
 				if (letter_index > -1) {
 					word_letters.splice(letter_index, 1);
-					if (!word_letters.length) return true;
+					if(!word_letters.length) return true;
 				}
 			}
-			return false;
+			return word_letters.length <= blanks;
 		});
 	};
 

@@ -129,7 +129,33 @@ export class Board{
 		return segments;
 	}
 
+	getPositionOfBlanksUsed(letters, word, segment=[]){
+		let availTiles = letters.split('');
+		let wordLetters = word.trim().toUpperCase().split('');
+		let positions = [];
+		for(let i=0; i<wordLetters.length; i++){
+			let letterOfWord = wordLetters[i]; // letter of the word
+			if(segment[i].letter){
+				if(segment[i].letter.toUpperCase() !== letterOfWord){
+					throw new Error(`The word "${word}" does not fit in the provided segment`);
+				}else{
+					continue;
+				}
+			}
+			let pos = availTiles.indexOf(letterOfWord); 
+			if(pos === -1){
+				pos = availTiles.indexOf('_');
+				if(pos === -1) throw new Error(`The word "${word}" does not fit in the letters: ${letters}`);
+				letterOfWord = '_';
+				positions.push(i);
+			}
+			availTiles.splice(pos, 1);
+		}
+		return positions;
+	}
+
 	async getBestTurn(letters){
+		letters = letters.trim().toUpperCase();
 		let best_play = false;
 		let playable_segments = this.getPlayableSegments(letters.length);
 		for(let i=0; i<playable_segments.length; i++){
@@ -138,51 +164,17 @@ export class Board{
 			let words = await WordFinder(letters, segment);
 			for(let w=0; w<words.length; w++){
 				let turn = new Turn(x, y, vertical, words[w]);
-				let is_valid = await this.validateAndScoreTurn(turn);
+				try{ turn.setTiles(letters, this.board); }catch(e){ continue; }
+				let blankPositions = this.getPositionOfBlanksUsed(letters, words[w], segment);
+				let is_valid = await this.validateAndScoreTurn(turn, blankPositions);
 				if(is_valid && (!best_play || turn.score > best_play.score)){
 					best_play = turn;
+					console.log(`${words[w]} with ${blankPositions.length} blanks is worth ${turn.score}. [${turn.tiles.join(', ')}]`);
 				}
 			}
 		}
 		return best_play;
 	}
-
-	/**
-	 * Get the best move using only the letters provided
-	 * 
-	 * [OBSOLETED by getBestTurn()]
-	 * This function is essentially useless (unless the board is empty)
-	 * because I forgot to account for the letters that are already on the board.
-	 * This function basically just does what all the online scrabble word finders 
-	 * do, except it tells you where to play it.
-	 * 
-	 * @param {String} my_letters 
-	 * @returns {Turn}
-	 */
-	async getBestTurnExclusive(my_letters){
-		let words = await WordFinder(my_letters);
-		let board_size = this.board.length;
-		let best_play = null;
-		for(let i=words.length; i--;){
-			let word = words[i];
-			for(let x=board_size-word.length; x--;){
-				for(let y=board_size; y--;){
-					let h = new Turn(x, y, false, word);
-					let is_valid = await this.validateAndScoreTurn(h);
-					if(is_valid && (!best_play || h.score > best_play.score)){
-						best_play = h;
-					}
-					let v = new Turn(x, y, true, word);
-					is_valid = await this.validateAndScoreTurn(v);
-					if(is_valid && (!best_play || v.score > best_play.score)){
-						best_play = v;
-					}
-				}
-			}
-		}
-		return best_play;
-	}
-
 
 	getLetterScore(letter, x, y){
 		let word_multiplier = 1;
@@ -209,6 +201,8 @@ export class Board{
 			
 		for(let i = 0; i<letters.length; i++){
 			let play_letter = letters[i];
+			let tile_letter = turn.tiles[i] === '_' ? '_' : play_letter;
+
 			if(!this.board[curr_y] || !this.board[curr_y][curr_x]) return false;
 			let cell = this.board[curr_y][curr_x];
 			if(cell.letter){
@@ -222,7 +216,7 @@ export class Board{
 				if(adjacent_word.length > 1 && !(await isWordValid(adjacent_word))) return false;
 			} 
 
-			let s = this.getLetterScore(play_letter, curr_x, curr_y);
+			let s = this.getLetterScore(tile_letter, curr_x, curr_y);
 			score += s.score;
 			if(s.word_multiplier > 1) word_multiplier = s.word_multiplier;
 

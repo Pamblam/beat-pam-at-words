@@ -13,7 +13,7 @@ import { WordFinder } from './modules/WordFinder.module.js';
 
 	const setLetters = letters => {
 		if ($("#letters").val() !== letters) $("#letters").val(letters)
-		my_letters = letters.toUpperCase();
+		my_letters = letters.toUpperCase().trim();
 	};
 
 	const addWordToBoard = async (word, col, row, dir) => {
@@ -62,7 +62,7 @@ import { WordFinder } from './modules/WordFinder.module.js';
 	});
 
 	let state_change_timer = null;
-	$("#gamestate").on("input change", function(e){
+	$("#gamestate").on("change", function(e){
 		if($("#gamestate").val().trim() === '') return;
 		if(state_change_timer) clearTimeout(state_change_timer);
 		state_change_timer = setTimeout(()=>{
