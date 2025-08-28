@@ -17,9 +17,36 @@
 		<div class="alert alert-warning"><b>Warnings:</b><ol>
 			<li>The web interface blocks UI rendering during "Find best move" operation. Calculation should be moved to a worker thread. Or else just implement a commend-line version.</li>
 		</ol></div>
-		<div class="form-group">
-			<label for="letters">My Letters:</label>
-			<input type="text" class="form-control" id="letters">
+
+		<div class="row">
+			<div class="col-md-6">
+				<div class="form-group">
+					<label for="savedgames">My Games:</label>
+					<select class="form-control" id="savedgames"></select>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="form-group">
+					<label for="gametitle">Game title:</label>
+					<div class="input-group">
+						<input type="text" class="form-control" id="gametitle">
+						<div class="input-group-append">
+							<button class="btn btn-success" type="button" id="savegame">Save</button>
+							<button class="btn btn-danger" type="button" id="deletegame">Delete</button>
+							<button class="btn btn-primary" type="button" id="newgame">New</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col-md-12">
+				<div class="form-group">
+					<label for="letters">My Letters:</label>
+					<input type="text" class="form-control" id="letters">
+				</div>
+			</div>
 		</div>
 
 		<div class="row">

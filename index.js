@@ -8,8 +8,32 @@ import { WordFinder } from './modules/WordFinder.module.js';
 (async () => {
 	let my_letters = '';
 
+	let current_saved_game_index = -1;
+	let saved_games = JSON.parse(localStorage.getItem('beat-pam') || '[]');
+
 	let board = new Board();
 	await board.load();
+
+	const loadState = async state => {
+		board = new Board();
+		await board.load();
+		if(state && state.length && state[0].length && state[0].length === state.length){
+			for(let y=0; y<state.length; y++){
+				for(let x=0; x<state[y].length; x++){
+					board.board[y][x].letter = state[y][x]!==0 ? state[y][x].toLowerCase() : null;
+				}
+			}
+			$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
+			return true;
+		}
+		return false;
+	};
+
+	const renderSavedGamesSelect = ()=>{
+		document.getElementById('savedgames').innerHTML = (current_saved_game_index === -1 ? '<option></option>' : '')+saved_games.map((g,i)=>{
+			return `<option value='${i}' ${current_saved_game_index === i ? 'selected' : ''}>${g.title}</option>`;
+		}).join('');
+	};
 
 	const setLetters = letters => {
 		if ($("#letters").val() !== letters) $("#letters").val(letters)
@@ -44,11 +68,64 @@ import { WordFinder } from './modules/WordFinder.module.js';
 		});
 	}
 
+	renderSavedGamesSelect();
+
 	$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
 	$("#gamestate").val(PrintBoard(board, true));
 
 	$("#letters").on('input', function () {
 		setLetters(this.value);
+	});
+
+	$("#savegame").click(function(e){
+		e.preventDefault();
+		let title = $("#gametitle").val().trim() || 'Untitled Game #'+saved_games.length;
+		let gameboard = JSON.parse(PrintBoard(board, true));
+		let letters = $("#letters").val();
+		let game = {title, board:gameboard, letters};
+
+		if(current_saved_game_index === -1){
+			current_saved_game_index = saved_games.length;
+			saved_games.push(game);
+		}else{
+			saved_games[current_saved_game_index] = game;
+		}
+
+		localStorage.setItem('beat-pam', JSON.stringify(saved_games));
+		renderSavedGamesSelect();
+	});
+
+	$("#newgame").click(async function(e){
+		e.preventDefault();
+		current_saved_game_index = -1;
+		$("#gametitle").val('');
+		board = new Board();
+		board.load();
+		$("#letters").val('');
+		renderSavedGamesSelect();
+	});
+
+	$("#savedgames").change(function(){
+		current_saved_game_index = +this.value;
+		let {title,board,letters} = saved_games[current_saved_game_index];
+		$("#gametitle").val(title);
+		$("#letters").val(letters||'');
+		renderSavedGamesSelect();
+		loadState(board);
+	});
+
+	$('#deletegame').click(function(e){
+		e.preventDefault();
+		if(current_saved_game_index > -1){
+			saved_games.splice(current_saved_game_index, 1);
+			current_saved_game_index = -1;
+			$("#gametitle").val('');
+			board = new Board();
+			board.load();
+			$("#letters").val('');
+			localStorage.setItem('beat-pam', JSON.stringify(saved_games));
+			renderSavedGamesSelect();
+		}
 	});
 
 	$("#update_board").on('click', async function (e) {
@@ -68,17 +145,11 @@ import { WordFinder } from './modules/WordFinder.module.js';
 		state_change_timer = setTimeout(()=>{
 			let state = false;
 			try{ state = JSON.parse($("#gamestate").val().trim()); }catch(e){}
-			if(state && state.length && state[0].length && state[0].length === state.length){
-				for(let y=0; y<state.length; y++){
-					for(let x=0; x<state[y].length; x++){
-						board.board[y][x].letter = state[y][x]!==0 ? state[y][x].toLowerCase() : null;
-					}
-				}
-				$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
+			if(loadState(state)){
 				alert("State Updated");
 			}else{
 				alert("Invalid state. Reverting");
-				$("#gamestate").val(PrintBoard(board, true));
+				$("#gamestate").val(PrintBoard(board, true));	
 			}
 			state_change_timer = false;
 		}, 1000);
