@@ -6,18 +6,18 @@ import { PrintBoard } from './modules/PrintBoard.module.js';
 import { Turn } from './modules/Turn.module.js';
 
 (async () => {
+	const game_letters = await fetch("./data/letter_values.json").then(r=>r.json());
+	const default_board = await fetch("./data/board-new.json").then(r=>r.json());
 
 	let my_letters = '';
 
 	let current_saved_game_index = -1;
 	let saved_games = JSON.parse(localStorage.getItem('beat-pam') || '[]');
 
-	let board = new Board();
-	await board.load();
+	let board = new Board(game_letters, default_board);
 
 	const loadState = async state => {
-		board = new Board();
-		await board.load();
+		board = new Board(game_letters, default_board);
 		if(state && state.length && state[0].length && state[0].length === state.length){
 			for(let y=0; y<state.length; y++){
 				for(let x=0; x<state[y].length; x++){
@@ -128,8 +128,7 @@ import { Turn } from './modules/Turn.module.js';
 		e.preventDefault();
 		current_saved_game_index = -1;
 		$("#gametitle").val('');
-		board = new Board();
-		board.load();
+		board = new Board(game_letters, default_board);
 		$("#letters").val('');
 		renderSavedGamesSelect();
 	});
@@ -149,8 +148,7 @@ import { Turn } from './modules/Turn.module.js';
 			saved_games.splice(current_saved_game_index, 1);
 			current_saved_game_index = -1;
 			$("#gametitle").val('');
-			board = new Board();
-			board.load();
+			board = new Board(game_letters, default_board);
 			$("#letters").val('');
 			localStorage.setItem('beat-pam', JSON.stringify(saved_games));
 			renderSavedGamesSelect();

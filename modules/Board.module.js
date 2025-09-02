@@ -4,19 +4,17 @@ import {Turn} from './Turn.module.js';
 
 export class Board{
 
-	constructor(board_type='board'){
-		this.board_type = board_type;
-		this.letters = [];
-		this.board = [];
-		this.turns = [];
-	} 
+	letters = [];
+	board = [];
+	turns = [];
 
-	async load(){
-		this.letters = await fetch("./data/letter_values.json").then(r=>r.json());
-		this.board = (await fetch("./data/"+this.board_type+".json").then(r=>r.json())).map((row, row_y)=>{
+	constructor(letters, boardLayout){
+		this.letters = letters;
+		this.board = boardLayout.map((row, row_y)=>{
 			return row.map((c, col_x)=>new Cell(c.trim() ? c : null, col_x, row_y));
 		});
-	}
+		this.turns = [];
+	} 
 
 	async addTurn(turn){
 		let valid = await this.validateAndScoreTurn(turn);

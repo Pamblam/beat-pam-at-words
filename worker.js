@@ -3,8 +3,10 @@ import { PrintBoard } from './modules/PrintBoard.module.js';
 import { Turn } from './modules/Turn.module.js';
 
 self.onmessage = async e => {
-	let board = new Board();
-	await board.load();
+	const game_letters = await fetch("./data/letter_values.json").then(r=>r.json());
+	const default_board = await fetch("./data/board-new.json").then(r=>r.json());
+
+	let board = new Board(game_letters, default_board);
 
 	let state = e.data.board;
 	if(state && state.length && state[0].length && state[0].length === state.length){
