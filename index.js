@@ -11,6 +11,11 @@ import { Turn } from './modules/Turn.module.js';
 	const board_canvas = new CanvasBoard(board_layout, document.getElementById('board'), ({col,row})=>{
 		$("#col").val(col);
 		$("#row").val(row);
+		console.log($("#word").val());
+		if($("#word").val().toUpperCase().trim()){
+			console.log('hetrer');
+			board_canvas.setUncommittedWord(+col, +row, $("#word").val().toUpperCase().trim(), $("#direction").val()==='V');
+		}
 	});
 
 	let my_letters = '';
@@ -45,7 +50,6 @@ import { Turn } from './modules/Turn.module.js';
 					board.board[y][x].letter = state[y][x]!==0 ? state[y][x].toLowerCase() : null;
 				}
 			}
-			// $("#board").html(`<pre>${PrintBoard(board)}</pre>`);
 			board_canvas.setBoard(board);
 			return true;
 		}
@@ -65,7 +69,6 @@ import { Turn } from './modules/Turn.module.js';
 
 	const addWordToBoard = async (word, col, row, dir) => {
 		await board.addTurn(new Turn(col, row, dir === 'V', word));
-		//$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
 		board_canvas.setBoard(board);
 		board_canvas.clearUncommittedWord(true);
 		possible_turns = [];
@@ -126,7 +129,6 @@ import { Turn } from './modules/Turn.module.js';
 
 	renderSavedGamesSelect();
 
-	//$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
 	board_canvas.setBoard(board);
 
 	$("#word, #col, #row, #direction").on('input',()=>{
@@ -138,8 +140,6 @@ import { Turn } from './modules/Turn.module.js';
 			board_canvas.setUncommittedWord(+col, +row, word, vert);
 		}
 	});
-
-	$("#gamestate").val(PrintBoard(board, true));
 
 	$("#letters").on('input', function () {
 		setLetters(this.value);
@@ -205,27 +205,9 @@ import { Turn } from './modules/Turn.module.js';
 		let row = +$("#row").val();
 		let dir = $("#direction").val();
 		await addWordToBoard(word, col, row, dir);
-		$("#gamestate").val(PrintBoard(board, true));
 		$("#word").val('');
 		$("#col").val('');
 		$("#row").val('');
-	});
-
-	let state_change_timer = null;
-	$("#gamestate").on("change", function(e){
-		if($("#gamestate").val().trim() === '') return;
-		if(state_change_timer) clearTimeout(state_change_timer);
-		state_change_timer = setTimeout(()=>{
-			let state = false;
-			try{ state = JSON.parse($("#gamestate").val().trim()); }catch(e){}
-			if(loadState(state)){
-				alert("State Updated");
-			}else{
-				alert("Invalid state. Reverting");
-				$("#gamestate").val(PrintBoard(board, true));	
-			}
-			state_change_timer = false;
-		}, 1000);
 	});
 
 	let processing = false;
@@ -242,11 +224,6 @@ import { Turn } from './modules/Turn.module.js';
 		},10);
 	});
 
-	$("#copystate").click(function(e){
-		e.preventDefault();
-		copyTextToClipboard(PrintBoard(board, true));
-	});
-
 	function boardModal(){
 		return new Promise(d=>{
 			$("#boardtoolmodal").modal('show');
@@ -255,42 +232,6 @@ import { Turn } from './modules/Turn.module.js';
 			$("#boardwidth").val(15).off('change').change();
 			$("#boardheight").val(15);
 			
-		});
-	}
-
-	function fallbackCopyTextToClipboard(text) {
-		var textArea = document.createElement("textarea");
-		textArea.value = text;
-
-		// Avoid scrolling to bottom
-		textArea.style.top = "0";
-		textArea.style.left = "0";
-		textArea.style.position = "fixed";
-
-		document.body.appendChild(textArea);
-		textArea.focus();
-		textArea.select();
-
-		try {
-			var successful = document.execCommand('copy');
-			var msg = successful ? 'successful' : 'unsuccessful';
-			console.log('Fallback: Copying text command was ' + msg);
-		} catch (err) {
-			console.error('Fallback: Oops, unable to copy', err);
-		}
-
-		document.body.removeChild(textArea);
-	}
-
-	function copyTextToClipboard(text) {
-		if (!navigator.clipboard) {
-			fallbackCopyTextToClipboard(text);
-			return;
-		}
-		navigator.clipboard.writeText(text).then(function () {
-			console.log('Async: Copying to clipboard was successful!');
-		}, function (err) {
-			console.error('Async: Could not copy text: ', err);
 		});
 	}
 
