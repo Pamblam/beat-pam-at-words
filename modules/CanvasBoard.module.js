@@ -6,36 +6,95 @@ export class CanvasBoard {
 	ctx = null;
 
 	cellSize = 30;
-	padding = 1.5;
+	padding = 5;
 	fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
 	fontWeight = '600';
 
+	boardState = [];
+	boardLayout = [];
+
+	uncommittedTiles = {};
+
 	colors = {
-		'* ': 'rgb(236,209,77)',
-		'  ': 'rgb(255,255,255)',
-		'TW': 'rgb(212,145,56)',
-		'TL': 'rgb(11,165,84)',
-		'DW': 'rgb(186,83,75)',
-		'DL': 'rgb(42,127,202)',
-		'CC': 'rgb(105,33,68)'
+		uncommitted: 'rgba(236,209,77,.5)',
+		letter: 'rgb(236,209,77)',
+		blank: 'rgb(255,255,255)',
+		TW: 'rgb(212,145,56)',
+		TL: 'rgb(11,165,84)',
+		DW: 'rgb(186,83,75)',
+		DL: 'rgb(42,127,202)',
+		CC: 'rgb(105,33,68)'
 	};
 
 	constructor(boardLayout, container, onCellClick=null) {
-		this.board = boardLayout;
+		this.boardLayout = boardLayout;
 		this.container = container;
 		if(onCellClick) this.onCellClick = onCellClick;
+		this.draw();
+	}
+
+	clearUncommittedWord(draw=false){
+		this.uncommittedTiles = {};
+		if(draw) this.draw();
+	}
+
+	setUncommittedWord(col, row, word, vert){
+		console.log(col, row, word, vert);
+		this.uncommittedTiles = {};
+		let letters = word.trim().toUpperCase().split('');
+		for(let i=0; i<letters.length; i++){
+			let col_idx = vert ? col : col + i;
+			let row_idx = vert ? row + i : row;
+			this.uncommittedTiles[`${col_idx},${row_idx}`] = letters[i];
+		}
+		console.log(this.uncommittedTiles);
+		this.draw();
+	}
+
+	setBoard(board){
+		this.boardState = board.board.map(row=>row.map(cell=>cell.letter||0));
 		this.draw();
 	}
 
 	draw() {
 		if(this.canvas) this.canvas.remove();
 		this.createGridCanvas();
+		for(let row=0; row<this.boardLayout.length; row++){
+			for(let col=0; col<this.boardLayout[row].length; col++){
+				let cell_display, cell_color, text_color;
+				if(this.uncommittedTiles[`${col},${row}`]){
+					cell_display = this.uncommittedTiles[`${col},${row}`];
+					cell_color = this.colors.uncommitted;
+					text_color = 'rgba(0,0,0,.5)';
+				}else if(this.boardState && this.boardState[row] && this.boardState[row][col] && this.boardState[row][col].trim()){
+					cell_display = this.boardState[row][col].toUpperCase().trim();
+					cell_color = this.colors.letter;
+					text_color = '#000';
+				}else{
+					cell_display = this.boardLayout[row][col];
+					cell_color = this.colors[cell_display || 'blank'];
+					text_color = '#FFF';
+				}
+				if(cell_display){
+					this.fillRectDraw(this.getRect(col, row), cell_color, cell_display, text_color);
+				}
+			}
+		}
 		this.container.appendChild(this.canvas);
 	}
 
+	getRect(col, row){
+		return {
+			x: col * this.cellSize + 0.5,
+			y: row * this.cellSize + 0.5,
+			w: this.cellSize - 0.5 * 2,
+			h: this.cellSize - 0.5 * 2
+		};
+	}
+
 	createGridCanvas() {
-		let cols = this.board[0].length;
-		let rows = this.board.length;
+		let cols = this.boardLayout[0].length;
+		let rows = this.boardLayout.length;
 
 		const dpr = window.devicePixelRatio || 1;
 		const cssW = cols * this.cellSize;
@@ -82,17 +141,16 @@ export class CanvasBoard {
 			const y = yCss * (cssH / rectEl.height);
 
 			const eps = 1e-6;
-			let col = Math.floor((x - eps) / cellSize);
-			let row = Math.floor((y - eps) / cellSize);
+			let col = Math.floor((x - eps) / this.cellSize);
+			let row = Math.floor((y - eps) / this.cellSize);
 			col = Math.max(0, Math.min(cols - 1, col));
 			row = Math.max(0, Math.min(rows - 1, row));
 
-			const inset = 0.5;
 			const rectDraw = {
-				x: col * cellSize + inset,
-				y: row * cellSize + inset,
-				w: cellSize - inset * 2,
-				h: cellSize - inset * 2
+				x: col * this.cellSize + 0.5,
+				y: row * this.cellSize + 0.5,
+				w: this.cellSize - 0.5 * 2,
+				h: this.cellSize - 0.5 * 2
 			};
 
 			if (typeof this.onCellClick === 'function') {
@@ -115,24 +173,24 @@ export class CanvasBoard {
 			const maxH = Math.max(0, rectDraw.h - this.padding * 2);
 
 			const testSize = 100;
-			ctx.font = `${this.fontWeight} ${testSize}px ${this.fontFamily}`;
+			this.ctx.font = `${this.fontWeight} ${testSize}px ${this.fontFamily}`;
 
-			const m = ctx.measureText(text);
+			const m = this.ctx.measureText(text);
 			const mw = Math.max(1, m.width);
 			const mh = (m.actualBoundingBoxAscent ?? testSize * 0.8) + (m.actualBoundingBoxDescent ?? testSize * 0.2);
 
 			const scale = Math.max(0.1, Math.min(maxW / mw, maxH / mh));
 			const fontSize = Math.floor(testSize * scale);
 
-			ctx.font = `${this.fontWeight} ${fontSize}px ${this.fontFamily}`;
-			ctx.fillStyle = textColor;
-			ctx.textAlign = 'center';
-			ctx.textBaseline = 'middle';
+			this.ctx.font = `${this.fontWeight} ${fontSize}px ${this.fontFamily}`;
+			this.ctx.fillStyle = textColor;
+			this.ctx.textAlign = 'center';
+			this.ctx.textBaseline = 'middle';
 
 			let x = rectDraw.x + rectDraw.w / 2;
 			let y = rectDraw.y + rectDraw.h / 2;
 
-			ctx.fillText(text, x, y);
+			this.ctx.fillText(text, x, y);
 		}
 
 		this.ctx.restore();

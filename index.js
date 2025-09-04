@@ -7,24 +7,46 @@ import { Turn } from './modules/Turn.module.js';
 
 (async () => {
 	const game_letters = await fetch("./data/letter_values.json").then(r=>r.json());
-	const default_board = await fetch("./data/board-new.json").then(r=>r.json());
+	const board_layout = await fetch("./data/board.json").then(r=>r.json());
+	const board_canvas = new CanvasBoard(board_layout, document.getElementById('board'), ({col,row})=>{
+		$("#col").val(col);
+		$("#row").val(row);
+	});
 
 	let my_letters = '';
+	let possible_turns = [];
 
 	let current_saved_game_index = -1;
 	let saved_games = JSON.parse(localStorage.getItem('beat-pam') || '[]');
 
-	let board = new Board(game_letters, default_board);
+	let board = new Board(game_letters, board_layout);
+
+	const renderPossibleTurns = () => {
+		possible_turns = possible_turns.sort((a,b)=>a.score>b.score?-1:1);
+		$("#possible_turns").html(possible_turns.map((turn,i)=>{
+			return `<a href='#' class="badge badge-primary p-1 m-1" data-index='${i}'>${turn.word} (${turn.score})</a>`;
+		}).join(''));
+		$("#possible_turns .badge").click(function(e){
+			e.preventDefault();
+			let turn = possible_turns[this.dataset.index];
+			$("#word").val(turn.word.toUpperCase());
+			$("#col").val(turn.cell_x);
+			$("#row").val(turn.row_y);
+			$("#direction").val(turn.is_vertical ? 'V' : 'H');
+			board_canvas.setUncommittedWord(+turn.cell_x, +turn.row_y, turn.word, turn.is_vertical);
+		});
+	};
 
 	const loadState = async state => {
-		board = new Board(game_letters, default_board);
+		board = new Board(game_letters, board_layout);
 		if(state && state.length && state[0].length && state[0].length === state.length){
 			for(let y=0; y<state.length; y++){
 				for(let x=0; x<state[y].length; x++){
 					board.board[y][x].letter = state[y][x]!==0 ? state[y][x].toLowerCase() : null;
 				}
 			}
-			$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
+			// $("#board").html(`<pre>${PrintBoard(board)}</pre>`);
+			board_canvas.setBoard(board);
 			return true;
 		}
 		return false;
@@ -43,7 +65,11 @@ import { Turn } from './modules/Turn.module.js';
 
 	const addWordToBoard = async (word, col, row, dir) => {
 		await board.addTurn(new Turn(col, row, dir === 'V', word));
-		$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
+		//$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
+		board_canvas.setBoard(board);
+		board_canvas.clearUncommittedWord(true);
+		possible_turns = [];
+		renderPossibleTurns();
 	};
 
 	const getBestMove = () => {
@@ -65,7 +91,9 @@ import { Turn } from './modules/Turn.module.js';
 						$("#col").val(e.data.turn.cell_x);
 						$("#row").val(e.data.turn.row_y);
 						$("#direction").val(e.data.turn.is_vertical ? 'V' : 'H');
-						console.log(e.data.turn.word.toUpperCase(),':',e.data.turn.score,'points');
+						possible_turns.push(e.data.turn);
+						board_canvas.setUncommittedWord(+e.data.turn.cell_x, +e.data.turn.row_y, e.data.turn.word, e.data.turn.is_vertical);
+						renderPossibleTurns();
 					}
 					if(e.data.complete){
 						workerThread.terminate();
@@ -76,7 +104,10 @@ import { Turn } from './modules/Turn.module.js';
 				};
 
 			}else{
-				board.getBestTurn(my_letters).then(turn => {
+				board.getBestTurn(my_letters, (turn)=>{
+					possible_turns.push(turn);
+				}).then(turn => {
+					renderPossibleTurns();
 					if (turn === false){
 						alert("Can't find a word that fits.");
 						d();
@@ -85,9 +116,9 @@ import { Turn } from './modules/Turn.module.js';
 						$("#col").val(turn.cell_x);
 						$("#row").val(turn.row_y);
 						$("#direction").val(turn.is_vertical ? 'V' : 'H');
+						board_canvas.setUncommittedWord(+turn.cell_x, +turn.row_y, turn.word, turn.is_vertical);
 						d();
 					}
-					
 				});
 			}
 		});
@@ -95,7 +126,19 @@ import { Turn } from './modules/Turn.module.js';
 
 	renderSavedGamesSelect();
 
-	$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
+	//$("#board").html(`<pre>${PrintBoard(board)}</pre>`);
+	board_canvas.setBoard(board);
+
+	$("#word, #col, #row, #direction").on('input',()=>{
+		let word = $("#word").val();
+		let col = $("#col").val();
+		let row = $("#row").val();
+		let vert = $("#direction").val() === 'V';
+		if(word.trim() && col !== '' && !isNaN(+col) && row !== '' && !isNaN(+row)){
+			board_canvas.setUncommittedWord(+col, +row, word, vert);
+		}
+	});
+
 	$("#gamestate").val(PrintBoard(board, true));
 
 	$("#letters").on('input', function () {
@@ -121,14 +164,14 @@ import { Turn } from './modules/Turn.module.js';
 	});
 
 	$("#newgame").click(async function(e){
-		let boardLayout = await boardModal();
-		if(!boardLayout) return;
-		console.log(boardLayout);
-		return;
+		// let boardLayout = await boardModal();
+		// if(!boardLayout) return;
+		// console.log(boardLayout);
+		// return;
 		e.preventDefault();
 		current_saved_game_index = -1;
 		$("#gametitle").val('');
-		board = new Board(game_letters, default_board);
+		board = new Board(game_letters, board_layout);
 		$("#letters").val('');
 		renderSavedGamesSelect();
 	});
@@ -148,7 +191,7 @@ import { Turn } from './modules/Turn.module.js';
 			saved_games.splice(current_saved_game_index, 1);
 			current_saved_game_index = -1;
 			$("#gametitle").val('');
-			board = new Board(game_letters, default_board);
+			board = new Board(game_letters, board_layout);
 			$("#letters").val('');
 			localStorage.setItem('beat-pam', JSON.stringify(saved_games));
 			renderSavedGamesSelect();
@@ -163,6 +206,9 @@ import { Turn } from './modules/Turn.module.js';
 		let dir = $("#direction").val();
 		await addWordToBoard(word, col, row, dir);
 		$("#gamestate").val(PrintBoard(board, true));
+		$("#word").val('');
+		$("#col").val('');
+		$("#row").val('');
 	});
 
 	let state_change_timer = null;

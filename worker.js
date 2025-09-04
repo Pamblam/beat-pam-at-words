@@ -4,7 +4,7 @@ import { Turn } from './modules/Turn.module.js';
 
 self.onmessage = async e => {
 	const game_letters = await fetch("./data/letter_values.json").then(r=>r.json());
-	const default_board = await fetch("./data/board-new.json").then(r=>r.json());
+	const default_board = await fetch("./data/board.json").then(r=>r.json());
 
 	let board = new Board(game_letters, default_board);
 

@@ -165,9 +165,9 @@ export class Board{
 				try{ turn.setTiles(letters, this.board); }catch(e){ continue; }
 				let blankPositions = this.getPositionOfBlanksUsed(letters, words[w], segment);
 				let is_valid = await this.validateAndScoreTurn(turn, blankPositions);
+				if(is_valid && callback) callback(turn);
 				if(is_valid && (!best_play || turn.score > best_play.score)){
 					best_play = turn;
-					if(callback) callback(turn);
 				}
 			}
 		}
