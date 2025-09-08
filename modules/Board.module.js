@@ -35,10 +35,19 @@ export class Board{
 	}
 
 	/**
-	 * // Get array of all consecutive squares (segments), with 
-		// between 1 and letters.length empty spaces.
-		// including consecutive spaces that are filled
+	 * Get an array segments (array of cells) of the board that might be used to place a word, 
+	 * or false if this space may not be used
+	 */
+	getSegmentsStartingAt(x, y, avail_letters_count, vertical = false){
+		let segments = [];
+		for(let segLen = 1; segLen <= avail_letters_count; segLen++){
+			let s = this.getSegmentStartingAt(x, y, segLen, vertical);
+			if(s) segments.push(s);
+		}
+		return segments;
+	}
 
+	/**
 	 * Get a segment (array of cells) of the board that might be used to place a word, 
 	 * or false if this space may not be used
 	 */
@@ -77,7 +86,7 @@ export class Board{
 			}
 		}
 		
-		// Get any consecutive FILLED cells BEFORE the requested segment.
+		// Get any consecutive FILLED cells AFTER the requested segment.
 		while(this.board[curr_y] && this.board[curr_y][curr_x]){
 			let curr_cell = this.board[curr_y][curr_x];
 			if(curr_cell.letter !== null || curr_cell.score_modifier === "CC"){
@@ -94,29 +103,55 @@ export class Board{
 				curr_x++;
 			}
 		}
+
+		// if the segment has not already been validated we need to check the
+		// adjacent cells of the segment 
+		if(!is_valid){
+			const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+			const rows = this.board.length, cols = this.board[0].length;
+			seg_loop: for(let s=0; s<segment.length; s++){
+				let cell = segment[s];
+				for (const [dr, dc] of dirs) {
+					const r = cell.row_y + dr, c = cell.col_x + dc;
+					if (r >= 0 && r < rows && c >= 0 && c < cols) {
+						let curr_cell = this.board[r][c];
+						if(curr_cell.letter !== null || curr_cell.score_modifier === "CC"){
+							is_valid = true;
+							break seg_loop;
+						}
+					}
+				}
+			}
+		}
+
+		// ensure that there is at least one blank cell in the segment
+		if(is_valid){
+			let blank_cells_in_seg = segment.filter(c=>!c.letter).length;
+			if(blank_cells_in_seg === 0) is_valid = false;
+		}
+		
 		return is_valid ? segment : false;
 	}
 
-	// Get all segments in which you could make a valid play
 	getPlayableSegments(avail_letters_count){
 		let keys = [];
 		let segments = [];
 		let board_size = this.board.length;
 		for(let y = 0; y < board_size; y++){
 			for(let x = 0; x < board_size; x++){
-				let segment, key; 
-
-				segment = this.getSegmentStartingAt(x, y, avail_letters_count, false);
-				if(segment){
-					key = `${x},${y},${0},${segment.length}`;
+				let segmentsAtPosH = this.getSegmentsStartingAt(x, y, avail_letters_count, false);
+				for(let s = 0; s<segmentsAtPosH.length; s++){
+					let segment = segmentsAtPosH[s];
+					let key = `${x},${y},${0},${segment.length}`;
 					if(-1 === keys.indexOf(key)){
 						keys.push(key);
 						segments.push({x, y, vertical: false, cells: segment});
 					} 
 				}
-				segment = this.getSegmentStartingAt(x, y, avail_letters_count, true);
-				if(segment){
-					key = `${x},${y},${1},${segment.length}`;
+				let segmentsAtPosV = this.getSegmentsStartingAt(x, y, avail_letters_count, true);
+				for(let s = 0; s<segmentsAtPosV.length; s++){
+					let segment = segmentsAtPosV[s];
+					let key = `${x},${y},${1},${segment.length}`;
 					if(-1 === keys.indexOf(key)){
 						keys.push(key);
 						segments.push({x, y, vertical: true, cells: segment});
@@ -160,6 +195,8 @@ export class Board{
 			let {x, y, vertical, cells} = playable_segments[i];
 			let segment = cells;
 			let words = await WordFinder(letters, segment);
+			if(x==8 && y==6 && !vertical && cells.length==2) console.log('words:', words);
+
 			for(let w=0; w<words.length; w++){
 				let turn = new Turn(x, y, vertical, words[w]);
 				try{ turn.setTiles(letters, this.board); }catch(e){ continue; }
@@ -223,7 +260,36 @@ export class Board{
 			}else{
 				curr_x++;
 			}
-			
+		}
+
+		// if the segment has not already been validated we need to check the
+		// adjacent cells of the segment 
+		if(!touches_word){
+			const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+			const rows = this.board.length, cols = this.board[0].length;
+			curr_x = turn.cell_x;
+			curr_y = turn.row_y;
+
+			seg_loop: for(let i = 0; i<letters.length; i++){
+				let cell = this.board[curr_y][curr_x];
+
+				for (const [dr, dc] of dirs) {
+					const r = cell.row_y + dr, c = cell.col_x + dc;
+					if (r >= 0 && r < rows && c >= 0 && c < cols) {
+						let curr_cell = this.board[r][c];
+						if(curr_cell.letter !== null || curr_cell.score_modifier === "CC"){
+							touches_word = true;
+							break seg_loop;
+						}
+					}
+				}
+
+				if(turn.is_vertical){
+					curr_y++;
+				}else{
+					curr_x++;
+				}
+			}
 		}
 
 		if(!touches_word) return false;

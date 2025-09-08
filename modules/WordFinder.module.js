@@ -6,7 +6,7 @@ export async function isWordValid(word){
 	return dict.includes(word.trim().toLowerCase());
 }
 
-export async function WordFinder(word, segment) {
+export async function WordFinder(word, segment, exactFit=false) {
 	if (!dict.length) dict = await fetch("./data/wordlist.json").then(r => r.json());
 	let my_letters = word.toLowerCase().split('');
 
@@ -33,32 +33,25 @@ export async function WordFinder(word, segment) {
 	if (!segment) return getWordsContainingLetters(my_letters);
 
 	const wordFitsInSegment = (word, segment) => {
+		if(word.length !== segment.length) return false;
 		let letters = word.split('');
 		let is_valid = false;
 		let letters_used = 0;
-		offest_loop: for (let offset = 0; offset <= segment.length - letters.length; offset++) {
-			cell_loop: for (let i = 0; i < segment.length; i++) {
-				let cell = segment[i];
-				let letter = letters[i - offset];
-				if (cell.letter) {
-					if (cell.letter === letter) {
-						is_valid = true;
-					} else {
-						is_valid = false;
-						letters_used = 0;
-						continue offest_loop;
-					}
-				} else if(letter){
-					letters_used++;
-					if (cell.score_modifier === 'CC') {
-						is_valid = true;
-					}
+		
+		cell_loop: for (let i = 0; i < segment.length; i++) {
+			let cell = segment[i];
+			let letter = letters[i];
+			if (cell.letter && cell.letter !== letter) {
+				return false;
+			} else if(letter){
+				letters_used++;
+				if (cell.score_modifier === 'CC') {
+					is_valid = true;
 				}
 			}
-
-			if(is_valid && letters_used) return true;
 		}
-		return false;
+
+		return letters_used > 0;
 	}
 
 	// Given the cells, get a subset of dict containing all available letters

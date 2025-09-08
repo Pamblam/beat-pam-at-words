@@ -39,7 +39,6 @@ export class CanvasBoard {
 	}
 
 	setUncommittedWord(col, row, word, vert){
-		console.log(col, row, word, vert);
 		this.uncommittedTiles = {};
 		let letters = word.trim().toUpperCase().split('');
 		for(let i=0; i<letters.length; i++){
@@ -47,7 +46,6 @@ export class CanvasBoard {
 			let row_idx = vert ? row + i : row;
 			this.uncommittedTiles[`${col_idx},${row_idx}`] = letters[i];
 		}
-		console.log(this.uncommittedTiles);
 		this.draw();
 	}
 

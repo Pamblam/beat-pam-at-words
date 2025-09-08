@@ -11,9 +11,7 @@ import { Turn } from './modules/Turn.module.js';
 	const board_canvas = new CanvasBoard(board_layout, document.getElementById('board'), ({col,row})=>{
 		$("#col").val(col);
 		$("#row").val(row);
-		console.log($("#word").val());
 		if($("#word").val().toUpperCase().trim()){
-			console.log('hetrer');
 			board_canvas.setUncommittedWord(+col, +row, $("#word").val().toUpperCase().trim(), $("#direction").val()==='V');
 		}
 	});
