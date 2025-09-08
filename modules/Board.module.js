@@ -195,7 +195,6 @@ export class Board{
 			let {x, y, vertical, cells} = playable_segments[i];
 			let segment = cells;
 			let words = await WordFinder(letters, segment);
-			if(x==8 && y==6 && !vertical && cells.length==2) console.log('words:', words);
 
 			for(let w=0; w<words.length; w++){
 				let turn = new Turn(x, y, vertical, words[w]);
