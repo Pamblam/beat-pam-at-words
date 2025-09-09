@@ -210,15 +210,15 @@ export class Board{
 		return best_play;
 	}
 
-	getLetterScore(letter, x, y){
+	getLetterScore(letter, x, y, ignoreMultiplier=false){
 		let word_multiplier = 1;
 		let score = this.letters[letter.toUpperCase()].score;
-		if(x !== undefined && y !== undefined){
+		if(!ignoreMultiplier && x !== undefined && y !== undefined){
 			if(this.board[y][x].score_modifier && !this.board[y][x].letter){
 				if(this.board[y][x].score_modifier === 'TL') score = score * 3;
 				if(this.board[y][x].score_modifier === 'DL') score = score * 2;
-				if(this.board[y][x].score_modifier === 'Dw') word_multiplier = 2;
-				if(this.board[y][x].score_modifier === 'Tw') word_multiplier = 3;
+				if(this.board[y][x].score_modifier === 'DW') word_multiplier = 2;
+				if(this.board[y][x].score_modifier === 'TW') word_multiplier = 3;
 			}
 		}
 		return {score, word_multiplier};
@@ -227,6 +227,7 @@ export class Board{
 	async validateAndScoreTurn(turn){
 		let score = 0;
 		let word_multiplier = 1;
+
 		let touches_word = false;
 
 		let letters = turn.getLetters();
@@ -239,6 +240,7 @@ export class Board{
 
 			if(!this.board[curr_y] || !this.board[curr_y][curr_x]) return false;
 			let cell = this.board[curr_y][curr_x];
+
 			if(cell.letter){
 				touches_word = true;
 				if(cell.letter !== play_letter) return false;
@@ -250,7 +252,8 @@ export class Board{
 				if(adjacent_word.length > 1 && !(await isWordValid(adjacent_word))) return false;
 			} 
 
-			let s = this.getLetterScore(tile_letter, curr_x, curr_y);
+			let s = this.getLetterScore(tile_letter, curr_x, curr_y, !!cell.letter);
+
 			score += s.score;
 			if(s.word_multiplier > 1) word_multiplier = s.word_multiplier;
 
